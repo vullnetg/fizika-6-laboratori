@@ -1,0 +1,17 @@
+"use client";
+import{useCallback,useEffect,useMemo,useState}from"react";import type{LessonSlug,LessonState,ProgressState}from"@/components/physics/types";import{lessons}from"@/data/lessons";
+const KEY="fizika6-kapitulli2-progress";
+const blank=():LessonState=>({lessonStarted:true,experimentCompleted:false,observationAnswered:false,conceptRevealed:false,practiceAttempts:0,practiceCorrect:0,challengeCompleted:false,retrievalResults:[],lessonCompleted:false});
+const initial:ProgressState={version:1,visited:[],completed:[],experiments:0,correctAnswers:0,wrongAnswers:0,unlockedTools:[],achievements:[],lessonStates:{},stopwatchAttempts:[]};
+export function useProgress(){const[progress,setProgress]=useState(initial);const[ready,setReady]=useState(false);
+useEffect(()=>{try{const x=localStorage.getItem(KEY);if(x)setProgress({...initial,...JSON.parse(x)})}catch{}setReady(true)},[]);
+useEffect(()=>{if(ready)localStorage.setItem(KEY,JSON.stringify(progress))},[progress,ready]);
+const visitLesson=useCallback((slug:LessonSlug)=>setProgress(c=>({...c,visited:c.visited.includes(slug)?c.visited:[...c.visited,slug],lessonStates:{...c.lessonStates,[slug]:c.lessonStates[slug]??blank()}})),[]);
+const recordPrediction=useCallback((slug:LessonSlug,prediction:string)=>setProgress(c=>({...c,lessonStates:{...c.lessonStates,[slug]:{...(c.lessonStates[slug]??blank()),prediction}}})),[]);
+const recordExperiment=useCallback((slug:LessonSlug)=>setProgress(c=>{const s=c.lessonStates[slug]??blank();return{...c,experiments:s.experimentCompleted?c.experiments:c.experiments+1,lessonStates:{...c.lessonStates,[slug]:{...s,experimentCompleted:true}}}}),[]);
+const recordAnswer=useCallback((slug:LessonSlug,correct:boolean)=>setProgress(c=>{const s=c.lessonStates[slug]??blank();return{...c,correctAnswers:c.correctAnswers+(correct?1:0),wrongAnswers:c.wrongAnswers+(correct?0:1),lessonStates:{...c.lessonStates,[slug]:{...s,practiceAttempts:s.practiceAttempts+1,practiceCorrect:s.practiceCorrect+(correct?1:0)}}}}),[]);
+const completeLesson=useCallback((slug:LessonSlug,achievement?:string)=>setProgress(c=>{const d=lessons.find(x=>x.slug===slug)!;const s=c.lessonStates[slug]??blank();return{...c,completed:c.completed.includes(slug)?c.completed:[...c.completed,slug],unlockedTools:c.unlockedTools.includes(d.instrument)?c.unlockedTools:[...c.unlockedTools,d.instrument],achievements:achievement&&!c.achievements.includes(achievement)?[...c.achievements,achievement]:c.achievements,lessonStates:{...c.lessonStates,[slug]:{...s,challengeCompleted:true,lessonCompleted:true}}}}),[]);
+const addStopwatchAttempt=useCallback((time:number)=>setProgress(c=>({...c,stopwatchAttempts:[...c.stopwatchAttempts,time].slice(-8)})),[]);
+const saveFinale=useCallback((material:string,d:number)=>setProgress(c=>({...c,achievements:c.achievements.includes("Fizikani i Ri")?c.achievements:[...c.achievements,"Fizikani i Ri"],finaleResult:{material,density:d,completedAt:new Date().toISOString()}})),[]);
+const resetProgress=useCallback(()=>setProgress(initial),[]);const percentage=useMemo(()=>Math.round(progress.completed.length/11*100),[progress.completed.length]);
+return{progress,percentage,visitLesson,recordPrediction,recordExperiment,recordAnswer,completeLesson,addStopwatchAttempt,saveFinale,resetProgress}}
