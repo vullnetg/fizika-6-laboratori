@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readdir, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test, { after } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -21,31 +21,12 @@ after(async () => {
   await vite.close();
 });
 
-async function readCssTree(directory) {
-  const entries = await readdir(directory, { withFileTypes: true });
-  const contents = await Promise.all(
-    entries.map(async (entry) => {
-      const entryPath = path.join(directory, entry.name);
-      if (entry.isDirectory()) {
-        return readCssTree(entryPath);
-      }
-      return entry.name.endsWith(".css") ? readFile(entryPath, "utf8") : "";
-    }),
-  );
-  return contents.join("\n");
-}
+test("keeps the laboratory responsive and motion-accessible", async () => {
+  const css = await readFile(path.join(root, "app/globals.css"), "utf8");
 
-test("emits the catalog's animation and scrolling utilities", async () => {
-  const css = await readCssTree(path.join(root, "dist"));
-
-  assert.match(css, /--tw-enter-opacity/);
-  assert.match(css, /scrollbar-width:\s*thin/);
-  assert.match(css, /scrollbar-width:\s*none/);
-  assert.match(css, /scrollbar-gutter:\s*stable/);
-  assert.match(css, /scroll-fade-reveal-b/);
-  assert.match(css, /mask-image:/);
-  assert.match(css, /tw-shimmer/);
-  assert.match(css, /prefers-reduced-motion:\s*reduce/);
+  assert.match(css, /@media\s*\(max-width:\s*680px\)/);
+  assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
+  assert.match(css, /:focus-visible/);
 });
 
 test("forwards progress semantics to the primitive", async () => {
@@ -57,29 +38,22 @@ test("forwards progress semantics to the primitive", async () => {
   assert.match(html, /data-state="loading"/);
 });
 
-test("emits chart themes for the starter's media dark mode", async () => {
-  const { ChartStyle } = await vite.ssrLoadModule("/components/ui/chart.tsx");
-  const html = renderToStaticMarkup(
-    React.createElement(ChartStyle, {
-      id: "contract",
-      config: {
-        latency: { theme: { light: "#ffffff", dark: "#000000" } },
-      },
-    }),
-  );
+test("implements all eleven chapter lessons", async () => {
+  const { lessons } = await vite.ssrLoadModule("/data/lessons.ts");
 
-  assert.match(html, /\[data-chart=contract\]/);
-  assert.match(html, /@media \(prefers-color-scheme: dark\)/);
-  assert.doesNotMatch(html, /\.dark/);
+  assert.equal(lessons.length, 11);
+  assert.deepEqual(
+    lessons.map((lesson) => lesson.number),
+    ["2.1", "2.2", "2.2.1", "2.2.2", "2.3", "2.4", "2.5", "2.5.1", "2.6", "2.7", "2.7.1"],
+  );
 });
 
-test("renders sidebar skeletons deterministically", async () => {
-  const { SidebarMenuSkeleton } = await vite.ssrLoadModule(
-    "/components/ui/sidebar.tsx",
-  );
-  const first = renderToStaticMarkup(React.createElement(SidebarMenuSkeleton));
-  const second = renderToStaticMarkup(React.createElement(SidebarMenuSkeleton));
+test("calculates the core measurements correctly", async () => {
+  const physics = await vite.ssrLoadModule("/lib/physics.ts");
 
-  assert.equal(first, second);
-  assert.match(first, /--skeleton-width:70%/);
+  assert.equal(physics.lengthFromRuler(2, 11), 9);
+  assert.equal(physics.displacedVolume(50, 68), 18);
+  assert.equal(physics.density(270, 100), 2.7);
+  assert.equal(physics.average([4.92, 5.17, 4.98]), 5.023333333333333);
+  assert.equal(physics.closestMaterial(2.7).name, "Alumin");
 });
