@@ -57,3 +57,27 @@ test("calculates the core measurements correctly", async () => {
   assert.equal(physics.average([4.92, 5.17, 4.98]), 5.023333333333333);
   assert.equal(physics.closestMaterial(2.7).name, "Alumin");
 });
+
+test("implements the observation to explanation learning sequence", async () => {
+  const learning = await readFile(
+    path.join(root, "components/physics/Learning.tsx"),
+    "utf8",
+  );
+  const lessonUi = await readFile(
+    path.join(root, "components/physics/Lessons.tsx"),
+    "utf8",
+  );
+
+  assert.match(learning, /ÇFARË NDODHI\?/);
+  assert.match(learning, /PSE NDODHI\?/);
+  assert.match(learning, /SI E QUAN FIZIKA\?/);
+  assert.match(learning, /A MUND TA SHPJEGOSH\?/);
+  assert.match(learning, /PARA SE TË VAZHDOSH/);
+  assert.match(lessonUi, /recordObservation/);
+  assert.match(lessonUi, /revealConcept/);
+  assert.match(lessonUi, /recordExplanation/);
+  assert.ok(
+    (lessonUi.match(/<ExplainCheck/g) ?? []).length >= 10,
+    "every experimental concept should require an explanation check",
+  );
+});
